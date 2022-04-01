@@ -303,6 +303,47 @@ function RetrieveUsingWebAPIFetchxml(formContext, quantity) {
         };
         retrieveReq.send();
     }
+
+
+    if (new_contract_r11) {
+        serviverUrl = Xrm.Page.context.getClientUrl();
+        parameter = "new_orders?$select=new_orderid&$filter=_new_new_contract_r11_value eq " + new_contract_r11;
+        var new_orderids = "", filterxml = "";
+        var retrieveReq2 = new XMLHttpRequest();
+        retrieveReq2.open("GET", encodeURI(serviverUrl + "/api/data/v9.1/" + parameter), false);
+        retrieveReq2.setRequestHeader("Accept", "application/json");
+        retrieveReq2.setRequestHeader("Content-Type", "application/json;charset=utf-8");
+        retrieveReq2.setRequestHeader("OData-MaxVersion", "4.0");
+        retrieveReq2.setRequestHeader("OData-Version", "4.0");
+        retrieveReq2.setRequestHeader("Prefer", "oadata.include-annotations=\"*\"");
+        retrieveReq2.onreadystatechange = function () {
+            if (this.readyState === 4) {
+                retrieveReq2.onreadystatechange = null;
+                if (this.status === 200) {
+                    let order_info = JSON.parse(this.response);
+                    debugger
+                    if (order_info.value.length > 0) {
+                        order_info.value.forEach(function (item) {
+                            new_orderids += '<condition attribute="new_order_r1" operator="eq" value="' + item.new_orderid + '" />';
+                        })
+                    }
+                    if (order_info.value.length == 1) {
+                        filterxml = "<filter type='and'>" + new_orderids + "</filter>";
+                    }
+                    else if (order_info.value.length > 1) {
+                        filterxml = "<filter type='or'>" + new_orderids + "</filter>";
+                    }
+                } else {
+                    Xrm.Utility.alertDialog(this.statusText);
+                }
+            }
+        };
+        retrieveReq2.send();
+    }
+
+
+
+
     let product_options = Xrm.Page.getAttribute('new_product_r11').getValue();
     if (product_options) {
 
@@ -310,9 +351,9 @@ function RetrieveUsingWebAPIFetchxml(formContext, quantity) {
         var fetchxml = "<fetch mapping='logical' aggregate='true' version='1.0'>\
                         <entity name = 'new_orderdetail'>\
                     <attribute name='new_quantity' alias='sum_new_quantity' aggregate='sum'/>\
-                    <filter  type = 'and'>\
+                    <filter>\
                       <condition attribute='new_product_r11' operator='eq' value='"+ product_options[0].id + "'/>\
-                      <condition attribute='new_order_r1' operator='eq' value='"+ orderId + "'/>\
+                        "+ filterxml + "\
                     </filter>\
                     <link-entity name='new_order' from='new_orderid' to='new_order_r1' link-type='inner'/>\
                   </entity></fetch>";
@@ -345,9 +386,8 @@ function RetrieveUsingWebAPIFetchxml(formContext, quantity) {
     <filter  type = 'and'>\
       <condition attribute='new_product_r11' operator='eq' value='"+ product_options[0].id + "'/>\
       <condition attribute='new_contract_r11' operator='eq' value='"+ new_contract_r11 + "'/>\
-    </filter>\
-    <link-entity name='new_order' from='new_new_contract_r11' to='new_contract_r11' alias='o' link-type='inner'/>\
-  </entity></fetch>";
+    </filter></entity></fetch>";
+        //<link-entity name='new_order' from='new_new_contract_r11' to='new_contract_r11' alias='o' link-type='inner'/>\
         var reqHttp = new XMLHttpRequest();
         reqHttp.open("GET", encodeURI(Xrm.Page.context.getClientUrl() + "/api/data/v9.1/new_contractdetails?fetchXml=" + encodeURI(fetchxml), false), false);
         reqHttp.setRequestHeader("Accept", "application/json");
@@ -373,9 +413,5 @@ function RetrieveUsingWebAPIFetchxml(formContext, quantity) {
             Xrm.Utility.alertDialog("订单数量【" + quantity + "】超出合同中可供货数量【" + sum_quantity + "】，请重新填写!");
             formContext.getAttribute('new_quantity').setValue(0);
         }
-
     }
-
-
-
 }

@@ -184,8 +184,3 @@ function CheckStatus() {
 
 
 //页面禁用
-function disabledControls() {
-    Xrm.Page.ui.controls.forEach(function (item, index) {
-        item.setDisabled(true);
-    });
-}

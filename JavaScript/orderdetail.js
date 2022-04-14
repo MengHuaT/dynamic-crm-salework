@@ -9,6 +9,7 @@
 */
 
 var sum_quantity = 0, Usequantity = 0; //公共参数 @sum_quantity 供货数量,@Usequantity 已使用数量
+var go_next_step = true;
 /**
  * @description 页面加载事件函数: 
  * @param {*} executionContext  窗体上下文对象
@@ -69,13 +70,14 @@ function FormOnload(executionContext) {
 
 //小计计算事件
 function calculate(formContext) {
+    console.log("进来calculate=========")
     debugger
     var new_price = formContext.getAttribute('new_price').getValue() == null ? 0 : formContext.getAttribute('new_price').getValue();
     var quantity = formContext.getAttribute('new_quantity').getValue() == null ? 0 : formContext.getAttribute('new_quantity').getValue();
     formContext.getAttribute('new_totolprice').setValue(parseFloat(new_price) * parseFloat(quantity));
 
 
-    RetrieveUsingWebAPIFetchxml(formContext, quantity);
+    //RetrieveUsingWebAPIFetchxml(formContext, quantity);
 }
 
 
@@ -124,6 +126,7 @@ function CheckStatus() {
 
 //产品OnChange事件
 function ProductOnChange(formContext) {
+    debugger
     //#region 查产品信息
     let product_options = Xrm.Page.getAttribute('new_product_r11').getValue();
     if (product_options) {
@@ -217,45 +220,78 @@ function ProductAddFilter() {
 
         if (new_contract_r11 != "") {
             debugger;
-            var filter = "", fetchXmlfilter = '<filter type = "and"><condition attribute="new_productid" operator="null" /></filter>';
-
-            let serviverUrl = Xrm.Page.context.getClientUrl();
-            let parameter = "new_contractdetails?$select=new_product_r11&$filter=_new_contract_r11_value eq " + new_contract_r11;
-            var retrieveReq = new XMLHttpRequest();
-            retrieveReq.open("GET", encodeURI(serviverUrl + "/api/data/v9.1/" + parameter), false);
-            retrieveReq.setRequestHeader("Accept", "application/json");
-            retrieveReq.setRequestHeader("Content-Type", "application/json;charset=utf-8");
-            retrieveReq.setRequestHeader("OData-MaxVersion", "4.0");
-            retrieveReq.setRequestHeader("OData-Version", "4.0");
-            retrieveReq.setRequestHeader("Prefer", "oadata.include-annotations=\"*\"");
-            retrieveReq.onreadystatechange = function () {
-                if (this.readyState == 4) {
-                    retrieveReq.onreadystatechange = null;
-                    if (this.status == 200) {
-                        if (JSON.parse(this.response).value.length > 0) {
-                            var data = JSON.parse(this.response).value;
-                            data.forEach(function (item) {
-                                filter += '<condition attribute="new_productid" operator="eq" value="' + item._new_product_r11_value + '" />';
-                            })
-                        }
-                        if (JSON.parse(this.response).value.length > 1) {
-                            fetchXmlfilter = ' <filter type = "or"> ' + filter + '</filter>';
-                        }
-                        if (JSON.parse(this.response).value.length == 1) {
-                            fetchXmlfilter = ' <filter type = "and"> ' + filter + '</filter>';
-                        }
+            var pFetchXml = "<fetch version='1.0' output-format='xml-platform' mapping='logical' distinct='true'>\
+                <entity name = 'new_product' >\
+<attribute name='new_productid'/>\
+<attribute name='new_name'/>\
+<attribute name='createdon'/>\
+<order attribute='new_name' descending='false'/>\
+<link-entity name='new_contractdetail' from='new_product_r11' to='new_productid' link-type='inner' alias='ac'>\
+<filter type='and'>\
+<condition attribute='new_contract_r11' operator='eq'  uitype='new_contract' value='"+ new_contract_r11 + "'/>\
+</filter></link-entity></entity ></fetch >";
 
 
 
+            var id = "{00000000-0000-0000-0000-000000000001}";
+            var pEntityName = "new_product";
+            var pViewDisplayName = "产品查找视图";
 
-                    } else {
-                        var error = JSON.parse(this.response).error;
-                    }
-                }
-            }
-            retrieveReq.send();
+            var pLayoutXml = "<grid name='resultset' object='10188' jump='new_name' select='1' icon='1' preview='1'>\
+<row name='result' id='new_productid'>\
+<cell name='new_name' width='200' imageproviderfunctionname='' imageproviderwebresource='$webresource:'/>\
+<cell name='new_level' width='100'/>\
+<cell name='new_productnumber' width='150' imageproviderfunctionname='' imageproviderwebresource='$webresource:'/>\
+<cell name='new_productbrand' width='100'/><cell name='new_price' width='100'/>\
+<cell name='new_productdescription' width='300' imageproviderfunctionname='' imageproviderwebresource='$webresource:'/>\
+<cell name='createdon' width='125'/></row></grid>"
+
+
+            Xrm.Page.getControl('new_product_r11').addCustomView(id, pEntityName, pViewDisplayName, pFetchXml, pLayoutXml, false);
+            Xrm.Page.getControl('new_product_r11').setDefaultView(id);
+
+
+
+
+            //var filter = "", fetchXmlfilter = '<filter type = "and"><condition attribute="new_productid" operator="null" /></filter>';
+
+            //let serviverUrl = Xrm.Page.context.getClientUrl();
+            //let parameter = "new_contractdetails?$select=new_product_r11&$filter=_new_contract_r11_value eq " + new_contract_r11;
+            //var retrieveReq = new XMLHttpRequest();
+            //retrieveReq.open("GET", encodeURI(serviverUrl + "/api/data/v9.1/" + parameter), false);
+            //retrieveReq.setRequestHeader("Accept", "application/json");
+            //retrieveReq.setRequestHeader("Content-Type", "application/json;charset=utf-8");
+            //retrieveReq.setRequestHeader("OData-MaxVersion", "4.0");
+            //retrieveReq.setRequestHeader("OData-Version", "4.0");
+            //retrieveReq.setRequestHeader("Prefer", "oadata.include-annotations=\"*\"");
+            //retrieveReq.onreadystatechange = function () {
+            //    if (this.readyState == 4) {
+            //        retrieveReq.onreadystatechange = null;
+            //        if (this.status == 200) {
+            //            if (JSON.parse(this.response).value.length > 0) {
+            //                var data = JSON.parse(this.response).value;
+            //                data.forEach(function (item) {
+            //                    filter += '<condition attribute="new_productid" operator="eq" value="' + item._new_product_r11_value + '" />';
+            //                })
+            //            }
+            //            if (JSON.parse(this.response).value.length > 1) {
+            //                fetchXmlfilter = ' <filter type = "or"> ' + filter + '</filter>';
+            //            }
+            //            if (JSON.parse(this.response).value.length == 1) {
+            //                fetchXmlfilter = ' <filter type = "and"> ' + filter + '</filter>';
+            //            }
+
+
+
+
+            //        } else {
+            //            var error = JSON.parse(this.response).error;
+            //        }
+            //    }
+            //}
+            //retrieveReq.send();
         }
-        Xrm.Page.getControl('new_product_r11').addCustomFilter(fetchXmlfilter);
+        //Xrm.Page.getControl('new_product_r11').addCustomFilter(fetchXmlfilter);
 
     }
 
@@ -263,16 +299,12 @@ function ProductAddFilter() {
 
 
 //页面禁用
-function disabledControls() {
-    Xrm.Page.ui.controls.forEach(function (item, index) {
-        item.setDisabled(true);
-    });
-}
 
 
 //当前产品供货数量判断
 function RetrieveUsingWebAPIFetchxml(formContext, quantity) {
     debugger;
+    console.log("进来RetrieveUsingWebAPIFetchxml=========")
     var orderId = "";
     let order_options = Xrm.Page.getAttribute('new_order_r1').getValue();
     if (order_options) {
@@ -411,7 +443,19 @@ function RetrieveUsingWebAPIFetchxml(formContext, quantity) {
         sum_quantity = sum_quantity - Usequantity;//当前产品剩余供货数
         if (parseFloat(quantity) > parseFloat(sum_quantity)) {
             Xrm.Utility.alertDialog("订单数量【" + quantity + "】超出合同中可供货数量【" + sum_quantity + "】，请重新填写!");
-            formContext.getAttribute('new_quantity').setValue(0);
+            go_next_step = false;
         }
+        else
+            go_next_step = true;
+    }
+}
+
+function FormOnSave(executionContext) {
+    var formContext = executionContext.getFormContext();
+    var quantity = formContext.getAttribute('new_quantity').getValue() == null ? 0 : formContext.getAttribute('new_quantity').getValue();
+    RetrieveUsingWebAPIFetchxml(formContext, quantity)
+    if (!go_next_step) {
+        //终止提交
+        executionContext.getEventArgs().preventDefault();
     }
 }

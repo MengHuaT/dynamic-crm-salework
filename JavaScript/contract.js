@@ -1,7 +1,8 @@
-﻿/*
+﻿/// <reference path="salecmd.js" />
+/*
  * @Author: tmh
  * @Date: 2022-3-24 10:02:17
- * @LastEditors: Andy
+ * @LastEditors: tmh
  * @LastEditTime: 2022-3-31 10:00:46
  * @FilePath: \JavaScript\contact.js
  * @Description: 合同操作
@@ -14,10 +15,10 @@
  * @return {*} void
  */
 
-var interval = null;
+//var interval = null;
 function FormOnload(executionContext) {
     debugger
-    interval = setInterval("test()", 200);
+    //interval = setInterval("test()", 200);
 
     var lup = new Array();
     lup[0] = new Object();
@@ -123,15 +124,50 @@ function FormOnload(executionContext) {
 }
 //提交按钮显示权限判断
 function test() {
-    var submitButtonID = "new_contract|NoRelationship|Form|Mscrm.Form.new_contract.submitOnClick";
-    var submitBtn = window.top.document.getElementById(submitButtonID);
-    if (JSON.stringify(submitBtn) === '{}') {
-        userRole();
-        clearInterval(interval)
-    }
-    else {
-    }
+    debugger
+    var UserId = Xrm.Page.context.getUserId();       //获取当前用户id
+    var UserName = Xrm.Page.context.getUserName();       //获取当前用户的用户名
+    var UserRoles = Xrm.Page.context.getUserRoles();       //获取当用户的安全角色
+    var roleXml = "<fetch version='1.0' output-format='xml-platform' mapping='logical' distinct='false'>\
+                        <entity name='systemuserroles'>\
+        <all-attributes/>\
+    <filter>\
+      <condition attribute='systemuserid' operator='eq' value='"+ UserId +"'/>\
+    </filter>\
+    <link-entity name='role' from='roleid' to='roleid' link-type='inner'>\
+         <filter type='or'>\
+        <condition attribute='name' operator='like' value='%业务员%'/>\
+        <condition attribute='name' operator='like' value='%市场营销经理%'/>\
+      </filter>\
+    </link-entity>\
+  </entity></fetch>";
 
+    var entityName = "systemuserrolescollection";
+    var Count = 0;
+    let serviverUrl = Xrm.Page.context.getClientUrl();
+    var fetchStr = serviverUrl + "/api/data/v9.1/" + entityName + "?fetchXml=" + roleXml;
+    var req = new XMLHttpRequest()
+    req.open("GET", encodeURI(fetchStr), false);
+    req.setRequestHeader("Accept", "application/json");
+    req.setRequestHeader("Content-Type", "application/json; charset=utf-8");
+    req.setRequestHeader("OData-MaxVersion", "4.0");
+    req.setRequestHeader("OData-Version", "4.0");
+    req.setRequestHeader("Prefer", "odata.include-annotations=\"OData.Community.Display.V1.FormattedValue\"");
+    req.onreadystatechange = function () {
+        if (this.readyState == 4) {
+            if (this.status == 200) {
+                if (JSON.parse(req.responseText).value.length > 0) {
+                    Count = JSON.parse(req.responseText).value.length;
+                }
+
+            }
+            else {
+                alert(this.responseText);
+            }
+        }
+    };
+    req.send();
+    return Count > 0;
 }
 
 //客户更改事件函数: 
@@ -349,105 +385,127 @@ function ApprovalFailedOnClick() {
 }
 
 //页面禁用
-function disabledControls() {
-    Xrm.Page.ui.controls.forEach(function (item, index) {
-        try {
-            //页面上 因包含明细控件可能导致脚本异常
-            item.setDisabled(true);
-        }
-        catch {
-           
-        }
-    });
-}
+
 
 //点击复制合同
 function CopyContractOnClick() {
     debugger
-    var customer = {};
-    customer["new_contract_r1"] = Xrm.Page.data.entity.getId();        //给新实体的字段赋值
-    customer["new_contract_r1name"] = Xrm.Page.getAttribute("new_name").getValue();
+    //var customer = {};
+    //customer["new_contract_r1"] = Xrm.Page.data.entity.getId();        //给新实体的字段赋值
+    //customer["new_contract_r1name"] = Xrm.Page.getAttribute("new_name").getValue();
 
-    customer["new_name"] = Xrm.Page.getAttribute("new_name").getValue();
+    //customer["new_name"] = Xrm.Page.getAttribute("new_name").getValue();
 
-    if (Xrm.Page.getAttribute("new_account_r1").getValue() != null) {
-        customer["new_account_r1"] = Xrm.Page.getAttribute("new_account_r1").getValue()[0].id;
-        customer["new_account_r1name"] = Xrm.Page.getAttribute("new_account_r1").getValue()[0].name;
-    }
-    if (Xrm.Page.getAttribute("new_contact_r1").getValue() != null) {
-        customer["new_contact_r1"] = Xrm.Page.getAttribute("new_contact_r1").getValue()[0].id;
-        customer["new_contact_r1name"] = Xrm.Page.getAttribute("new_contact_r1").getValue()[0].name;
-    }
+    //if (Xrm.Page.getAttribute("new_account_r1").getValue() != null) {
+    //    customer["new_account_r1"] = Xrm.Page.getAttribute("new_account_r1").getValue()[0].id;
+    //    customer["new_account_r1name"] = Xrm.Page.getAttribute("new_account_r1").getValue()[0].name;
+    //}
+    //if (Xrm.Page.getAttribute("new_contact_r1").getValue() != null) {
+    //    customer["new_contact_r1"] = Xrm.Page.getAttribute("new_contact_r1").getValue()[0].id;
+    //    customer["new_contact_r1name"] = Xrm.Page.getAttribute("new_contact_r1").getValue()[0].name;
+    //}
 
-    if (Xrm.Page.getAttribute("new_transactioncurrency_r1").getValue() != null) {
-        customer["new_transactioncurrency_r1"] = Xrm.Page.getAttribute("new_transactioncurrency_r1").getValue()[0].id;
-        customer["new_transactioncurrency_r1name"] = Xrm.Page.getAttribute("new_transactioncurrency_r1").getValue()[0].name;
-    }
-    if (Xrm.Page.getAttribute("new_province_r1").getValue() != null) {
-        customer["new_province_r1"] = Xrm.Page.getAttribute("new_province_r1").getValue()[0].id;
-        customer["new_province_r1name"] = Xrm.Page.getAttribute("new_province_r1").getValue()[0].name;
-    }
+    //if (Xrm.Page.getAttribute("new_transactioncurrency_r1").getValue() != null) {
+    //    customer["new_transactioncurrency_r1"] = Xrm.Page.getAttribute("new_transactioncurrency_r1").getValue()[0].id;
+    //    customer["new_transactioncurrency_r1name"] = Xrm.Page.getAttribute("new_transactioncurrency_r1").getValue()[0].name;
+    //}
+    //if (Xrm.Page.getAttribute("new_province_r1").getValue() != null) {
+    //    customer["new_province_r1"] = Xrm.Page.getAttribute("new_province_r1").getValue()[0].id;
+    //    customer["new_province_r1name"] = Xrm.Page.getAttribute("new_province_r1").getValue()[0].name;
+    //}
 
-    if (Xrm.Page.getAttribute("new_city_r1").getValue() != null) {
-        customer["new_city_r1"] = Xrm.Page.getAttribute("new_city_r1").getValue()[0].id;
-        customer["new_city_r1name"] = Xrm.Page.getAttribute("new_city_r1").getValue()[0].name;
-    }
+    //if (Xrm.Page.getAttribute("new_city_r1").getValue() != null) {
+    //    customer["new_city_r1"] = Xrm.Page.getAttribute("new_city_r1").getValue()[0].id;
+    //    customer["new_city_r1name"] = Xrm.Page.getAttribute("new_city_r1").getValue()[0].name;
+    //}
 
-    customer["new_address"] = Xrm.Page.getAttribute("new_address").getValue();
-    customer["new_taxnumber"] = Xrm.Page.getAttribute("new_taxnumber").getValue();
+    //customer["new_address"] = Xrm.Page.getAttribute("new_address").getValue();
+    //customer["new_taxnumber"] = Xrm.Page.getAttribute("new_taxnumber").getValue();
 
-    customer["new_explanation"] = Xrm.Page.getAttribute("new_explanation").getValue();
-    customer["new_fax1"] = Xrm.Page.getAttribute("new_fax1").getValue();
-    customer["new_fax2"] = Xrm.Page.getAttribute("new_fax2").getValue();
+    //customer["new_explanation"] = Xrm.Page.getAttribute("new_explanation").getValue();
+    //customer["new_fax1"] = Xrm.Page.getAttribute("new_fax1").getValue();
+    //customer["new_fax2"] = Xrm.Page.getAttribute("new_fax2").getValue();
 
-    customer["new_lowestamount1"] = Xrm.Page.getAttribute("new_lowestamount1").getValue() == null ? 0 : Xrm.Page.getAttribute("new_lowestamount1").getValue();
-    customer["new_lowestamount"] = Xrm.Page.getAttribute("new_lowestamount").getValue() == null ? "" : Xrm.Page.getAttribute("new_lowestamount").getValue() == null;
-    customer["new_phone"] = Xrm.Page.getAttribute("new_phone").getValue();
-    customer["new_postalcode"] = Xrm.Page.getAttribute("new_postalcode").getValue();
-    customer["new_rmbamount"] = Xrm.Page.getAttribute("new_rmbamount").getValue() == null ? "" : Xrm.Page.getAttribute("new_rmbamount").getValue();
-    customer["new_amount"] = Xrm.Page.getAttribute("new_amount").getValue() == null ? 0 : Xrm.Page.getAttribute("new_amount").getValue();
+    //customer["new_lowestamount1"] = Xrm.Page.getAttribute("new_lowestamount1").getValue() == null ? 0 : Xrm.Page.getAttribute("new_lowestamount1").getValue();
+    //customer["new_lowestamount"] = Xrm.Page.getAttribute("new_lowestamount").getValue() == null ? "" : Xrm.Page.getAttribute("new_lowestamount").getValue() == null;
+    //customer["new_phone"] = Xrm.Page.getAttribute("new_phone").getValue();
+    //customer["new_postalcode"] = Xrm.Page.getAttribute("new_postalcode").getValue();
+    //customer["new_rmbamount"] = Xrm.Page.getAttribute("new_rmbamount").getValue() == null ? "" : Xrm.Page.getAttribute("new_rmbamount").getValue();
+    //customer["new_amount"] = Xrm.Page.getAttribute("new_amount").getValue() == null ? 0 : Xrm.Page.getAttribute("new_amount").getValue();
 
-    customer["new_startdate"] = Xrm.Page.getAttribute("new_startdate").getValue().toDateString();
-    customer["new_enddate"] = Xrm.Page.getAttribute("new_enddate").getValue().toDateString();
+    //customer["new_startdate"] = Xrm.Page.getAttribute("new_startdate").getValue().toDateString();
+    //customer["new_enddate"] = Xrm.Page.getAttribute("new_enddate").getValue().toDateString();
 
-    //打开创建的记录
-    Xrm.Utility.openEntityForm("new_contract", null, customer);
+    ////打开创建的记录
+    //Xrm.Utility.openEntityForm("new_contract", null, customer);
 
 
 
 
 
     //#region 后台action 实现复制
-    //debugger
-    //var ID = Xrm.Page.data.entity.getId().replace('{', '').replace('}', '');
-    //var entity = new Object();
-    //entity["actionName"] = 'workCopy';
-    //entity["input"] = ID;
-    //var req = new XMLHttpRequest()
-    //let serviverUrl = Xrm.Page.context.getClientUrl();
-    //req.open("post", serviverUrl + "/api/data/v9.1/" + "new_contracts(" + ID + ")/Microsoft.Dynamics.CRM.new_work", false);
-    //req.setRequestHeader("Accept", "application/json");
-    //req.setRequestHeader("crossDomain", "true");
-    //req.setRequestHeader("Content-Type", "application/json; charset=utf-8");
-    //req.setRequestHeader("OData-MaxVersion", "4.0");
-    //req.setRequestHeader("OData-Version", "4.0");
+    debugger
+    var ID = Xrm.Page.data.entity.getId().replace('{', '').replace('}', '');
+    var entity = new Object();
+    entity["actionName"] = 'workCopy';
+    entity["input"] = ID;
+    var req = new XMLHttpRequest()
+    let serviverUrl = Xrm.Page.context.getClientUrl();
+    req.open("post", serviverUrl + "/api/data/v9.1/" + "new_work_copy_contract_detail", false);
+    req.setRequestHeader("Accept", "application/json");
+    req.setRequestHeader("crossDomain", "true");
+    req.setRequestHeader("Content-Type", "application/json; charset=utf-8");
+    req.setRequestHeader("OData-MaxVersion", "4.0");
+    req.setRequestHeader("OData-Version", "4.0");
 
-    //req.onreadystatechange = function () {
-    //    if (this.readyState == 4) {
-    //        if (this.status == 200) {
-    //            var result = JSON.parse(this.responseText);
-    //            alert("复制成功");
-    //            Xrm.Page.ui.close();
-    //        }
-    //        else {
-    //            alert(this.responseText);
-    //        }
-    //    }
-    //};
-    //req.send(JSON.stringify(entity))
-    //endregion
+    req.onreadystatechange = function () {
+        if (this.readyState == 4) {
+            if (this.status == 200) {
+                var result = JSON.parse(this.responseText);
+                alert("复制成功");
+                openNewRecords(result.output)
+            }
+            else {
+                alert(this.responseText);
+            }
+        }
+    };
+    req.send(JSON.stringify(entity))
+    //#endregion
 }
 
+//打开新窗口
+function openNewRecords(fl_newrecord) {
+    undefined
+    //var fl_newrecord = Xrm.Page.getAttribute("new_nextplanguid"); //要打开实体的id
+    var fl_writeinproductid2 = fl_newrecord;
+    var windowOptions = {
+        undefined,
+        openInNewWindow: true
+    };
+    Xrm.Utility.openEntityForm("new_contract", fl_writeinproductid2, null, windowOptions);
+    //if (fl_writeinproductid2 == "" || fl_writeinproductid2 == undefined) {
+    //    undefined
+
+    //}
+    //else {
+    //    undefined
+    //    if (fl_writeinproductid2 != fl_newrecord && fl_newrecord != "") {
+    //        undefined
+    //        //fl_writeinproductid2 = fl_writeinproductid2[0].id.replace(/\{/, "").replace(/\}/, "");
+    //        fl_newrecord.setSubmitMode("always");
+    //        Xrm.Page.data.entity.save();
+    //        var windowOptions = {
+    //            undefined,
+    //            openInNewWindow: true
+    //        };
+    //        Xrm.Utility.openEntityForm("new_communicationplan", fl_writeinproductid2, null, windowOptions);
+    //    }
+    //}
+}
+
+
+//市地区的查找内容 fetchxml
 //市地区的查找内容 fetchxml
 function cityAddFilter() {
     debugger
@@ -474,61 +532,4 @@ function provinceOnChange(formContext, state) {
         Xrm.Page.getControl("new_city_r1").setDisabled(true);
     }
 
-}
-
-//安全角色
-function userRole() {
-    debugger
-
-    var UserId = Xrm.Page.context.getUserId();       //获取当前用户id
-    var UserName = Xrm.Page.context.getUserName();       //获取当前用户的用户名
-    var UserRoles = Xrm.Page.context.getUserRoles();       //获取当用户的安全角色
-    var roleXml = "<fetch no-lock='true' output-format='xml-platform'>\
-                      <entity name='systemuserroles'>\
-                        <attribute name='systemuserid'/>\
-                        <link-entity name='role' from='roleid' to ='roleid'>\
-                          <filter type='or'>\
-                            <condition attribute='name' operator='like' value='%业务员%'></condition>\
-                          </filter>\
-                         <filter type='or'>\
-                            <condition attribute='name' operator='like' value='%业务员%'></condition>\
-                          </filter>\
-                        </link-entity>\
-                        <filter type='and'>\
-                          <condition attribute='systemuserid' operator='eq' value='" + UserId + "'></condition>\
-                    </filter></entity></fetch>";
-
-    execFecthXml('systemuserrolescollection', roleXml);
-
-
-
-
-}
-function execFecthXml(entityName, fetchXml) {
-    let serviverUrl = Xrm.Page.context.getClientUrl();
-    var fetchStr = serviverUrl + "/api/data/v9.1/" + entityName + "?fetchXml=" + fetchXml;
-    var req = new XMLHttpRequest()
-    req.open("GET", encodeURI(fetchStr), false);
-    req.setRequestHeader("Accept", "application/json");
-    req.setRequestHeader("Content-Type", "application/json; charset=utf-8");
-    req.setRequestHeader("OData-MaxVersion", "4.0");
-    req.setRequestHeader("OData-Version", "4.0");
-    req.setRequestHeader("Prefer", "odata.include-annotations=\"OData.Community.Display.V1.FormattedValue\"");
-    req.onreadystatechange = function () {
-        if (this.readyState == 4) {
-            if (this.status == 200) {
-                if (JSON.parse(req.responseText).value.length == 0) {
-                    //角色符合业务员或经理！隐藏按钮！
-                    var submitButtonID = "new_contract|NoRelationship|Form|Mscrm.Form.new_contract.submitOnClick";
-                    var submitBtn = window.top.document.getElementById(submitButtonID);
-                    submitBtn.style.display = '';
-                    submitBtn.style.display = 'none';
-                }
-            }
-            else {
-                alert(this.responseText);
-            }
-        }
-    };
-    req.send()
 }
